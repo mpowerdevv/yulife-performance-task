@@ -5,7 +5,7 @@ export class User {
     @prop()
     public name?: string;
 
-    @prop()
+    @prop({ index: true })
     public email!: string;
 
     @prop()

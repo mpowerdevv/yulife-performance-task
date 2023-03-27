@@ -87,6 +87,7 @@ export default class MessageResolver {
         };
     }
 
+    //IE: the method is used to move inbox message to archive when it's been read.
     @Mutation(() => Archive)
     @UseMiddleware(isAuthorized)
     async markMessageAsRead(@Ctx() { database, payload }: Context, @Arg("messageId") messageId: string): Promise<Archive> {
@@ -118,9 +119,7 @@ export default class MessageResolver {
             archivedAt: Date.now()
         })
 
-        await database.MessageModel.deleteOne({
-            _id: messageId
-        })
+        archivedRecord.delete();
 
 
         return {

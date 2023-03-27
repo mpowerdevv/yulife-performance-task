@@ -21,6 +21,7 @@ const init = async () => {
 
     const path = "/graphql";
 
+    //IE: Changed to dedicated auth middleware within resolvers
     // app.use(
     //     path,
     //     jwt({

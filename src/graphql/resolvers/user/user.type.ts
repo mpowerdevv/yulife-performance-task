@@ -12,12 +12,14 @@ class User {
     @Field()
     unreadMessageCount?: number;
 
+    //IE: number of messages been read.
     @Field()
     readMessageCount?: number;
 
     @Field(type => [Message])
     inbox?: Message[];
 
+    //IE: collection to hold the message have been read to reduce inbox volumes
     @Field(type => [Archive])
     archive?: Archive[];
 }

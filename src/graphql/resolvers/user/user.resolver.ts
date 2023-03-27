@@ -14,7 +14,7 @@ export default class UserResolver {
      * Me Query
      */
     @Query(returns => User)
-    @UseMiddleware(isAuthorized)
+    @UseMiddleware(isAuthorized) //IE: JWT token auth. check.
     async me(@Ctx() { database, payload }: Context): Promise<User> {
         const userId = payload.userId;
 
@@ -42,8 +42,9 @@ export default class UserResolver {
      */
     @FieldResolver()
     async inbox(@Ctx() { database, payload }: Context,
-        @Arg('limit', { defaultValue: 0 }) limit: number,
-        @Arg('offset', { defaultValue: 0 }) offset: number): Promise<User["inbox"]> {
+        @Arg('limit', { defaultValue: 0 }) limit: number, //[IE: pagination added]
+        @Arg('offset', { defaultValue: 0 }) offset: number) //[IE: pagination added]
+        : Promise<User["inbox"]> {
         // lookup the messages for a user from messages table
         const userId = payload.userId;
 
@@ -65,8 +66,8 @@ export default class UserResolver {
    */
     @FieldResolver()
     async archive(@Ctx() { database, payload }: Context,
-        @Arg('limit', { defaultValue: 0 }) limit: number,
-        @Arg('offset', { defaultValue: 0 }) offset: number
+        @Arg('limit', { defaultValue: 0 }) limit: number,  //[IE: pagination added]
+        @Arg('offset', { defaultValue: 0 }) offset: number //[IE: pagination added]
     ): Promise<User["archive"]> {
         const userId = payload.userId;
 
@@ -85,7 +86,7 @@ export default class UserResolver {
     }
 
     /**
-     * Unread message count for a user
+     * IE: Unread message count for a user
      */
     @FieldResolver()
     async unreadMessageCount(

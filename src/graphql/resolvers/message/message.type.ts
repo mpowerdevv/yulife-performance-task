@@ -17,6 +17,8 @@ class Message {
 
 }
 
+
+//IE: The type is used for collection of the messag's' been read.
 @ObjectType()
 export class Archive {
     @Field(type => ID)

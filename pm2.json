@@ -2,12 +2,11 @@
     "apps": [
         {
             "exec_mode": "cluster",
-            "instances": 4,
+            "instances": 0,
             "script": "./build/init.js",
             "name": "yulifePerfTest",
             "interpreter": "node",
             "env": {
-                "PORT": 3000,
                 "NODE_ENV": "production"
             }
         }
