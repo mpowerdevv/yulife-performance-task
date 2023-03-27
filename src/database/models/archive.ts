@@ -1,7 +1,7 @@
 import { prop, Ref, getModelForClass } from '@typegoose/typegoose';
 import { User } from "./user";
 
-export class Message {
+export class Archive {
     @prop({ ref: User })
     public from!: Ref<User>;
 
@@ -11,8 +11,11 @@ export class Message {
     @prop()
     public contents!: string;
 
+    @prop({ default: Date.now() })
+    public archivedAt!: Number;
 }
 
-const MessageModel = getModelForClass(Message);
 
-export default MessageModel;
+const ArchiveModel = getModelForClass(Archive);
+
+export default ArchiveModel;

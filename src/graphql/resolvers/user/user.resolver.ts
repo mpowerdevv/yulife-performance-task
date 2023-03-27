@@ -1,10 +1,12 @@
-import { Resolver, Query, Mutation, Ctx, Arg, FieldResolver, Root } from "type-graphql";
+import { Resolver, Query, Mutation, Ctx, Arg, FieldResolver, Root, Field, ObjectType, UseMiddleware } from "type-graphql";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
 import User from "./user.type";
-import Context from "../../context";
+import { Context } from "../../context";
 import config from "../../../config";
-import { isDocument } from "@typegoose/typegoose";
+import { isAuthorized } from "../../__helpers__/isAuthorized";
+
+
 
 @Resolver(User)
 export default class UserResolver {
@@ -12,7 +14,10 @@ export default class UserResolver {
      * Me Query
      */
     @Query(returns => User)
-    async me(@Ctx() { database, userId }: Context): Promise<User> {
+    @UseMiddleware(isAuthorized)
+    async me(@Ctx() { database, payload }: Context): Promise<User> {
+        const userId = payload.userId;
+
         if (!userId) {
             throw new Error(`Not authenticated`);
         }
@@ -28,6 +33,7 @@ export default class UserResolver {
             name: user.name,
             inbox: undefined,
             unreadMessageCount: undefined,
+            readMessageCount: undefined
         };
     }
 
@@ -35,10 +41,40 @@ export default class UserResolver {
      * User's inbox
      */
     @FieldResolver()
-    async inbox(@Root() user: User, @Ctx() { database, userId }: Context): Promise<User["inbox"]> {
+    async inbox(@Ctx() { database, payload }: Context,
+        @Arg('limit', { defaultValue: 0 }) limit: number,
+        @Arg('offset', { defaultValue: 0 }) offset: number): Promise<User["inbox"]> {
         // lookup the messages for a user from messages table
-        const messages = await database.MessageModel.find({ to: userId });
+        const userId = payload.userId;
 
+        const messages = await database.MessageModel
+            .find({ to: userId })
+            .skip(offset)
+            .limit(limit);
+
+        return messages.map((message: { id: any; contents: any; to: any; from: any; }) => ({
+            id: message.id,
+            contents: message.contents,
+            to: message.to as any,
+            from: message.from as any,
+        }));
+    }
+
+    /**
+   * User's message archive
+   */
+    @FieldResolver()
+    async archive(@Ctx() { database, payload }: Context,
+        @Arg('limit', { defaultValue: 0 }) limit: number,
+        @Arg('offset', { defaultValue: 0 }) offset: number
+    ): Promise<User["archive"]> {
+        const userId = payload.userId;
+
+        const messages = await database.ArchiveModel
+            .find({ to: userId })
+            .skip(offset)
+            .limit(limit);
+        ;
 
         return messages.map((message: { id: any; contents: any; to: any; from: any; }) => ({
             id: message.id,
@@ -54,17 +90,33 @@ export default class UserResolver {
     @FieldResolver()
     async unreadMessageCount(
         @Root() user: User,
-        @Ctx() { database, userId }: Context,
+        @Ctx() { database, payload }: Context,
     ): Promise<User["unreadMessageCount"]> {
         // do a count on the DB for messages count
+        const userId = payload.userId;
         const count = await database.MessageModel.find({ to: userId });
         return count.length;
     }
 
     /**
+     * Read message count for a user
+     */
+    @FieldResolver()
+    async readMessageCount(
+        @Root() user: User,
+        @Ctx() { database, payload }: Context,
+    ): Promise<User["readMessageCount"]> {
+        // do a count on the DB for messages count
+        const userId = payload.userId;
+        const count = await database.ArchiveModel.find({ to: userId });
+        return count.length;
+    }
+
+
+    /**
      * Login mutation
      */
-    @Mutation(returns => String)
+    @Mutation(() => String)
     async login(@Arg("email") email: string, @Arg("password") password: string, @Ctx() { database }: Context) {
         const record = await database.UserModel.findOne({ email });
 
@@ -78,7 +130,9 @@ export default class UserResolver {
             throw new Error(`Invalid credentials`);
         }
 
-        return jwt.sign({ userId: record._id }, config.auth.secret, { expiresIn: "1y" });
+        const accessToken = jwt.sign({ userId: record._id }, config.auth.secret, { expiresIn: "15m" });
+
+        return accessToken
     }
 
     /**
@@ -99,6 +153,6 @@ export default class UserResolver {
             password: hash,
         });
 
-        return jwt.sign({ userId: user._id }, config.auth.secret, { expiresIn: "1y" });
+        return jwt.sign({ userId: user._id }, config.auth.secret, { expiresIn: "15m" });
     }
 }

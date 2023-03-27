@@ -1,23 +1,14 @@
 import { ExpressContext } from "apollo-server-express/dist/ApolloServer";
+import { Request, Response } from "express";
 import { Database } from "../database";
 
-class Context {
-    public userId?: string;
-    public isAuthenticated?: boolean;
 
-    constructor(public database: Database, expressContext: ExpressContext) {
-        const user = (expressContext.req as any).user as Creds;
-
-        if (user) {
-            this.userId = user.userId;
-            this.isAuthenticated = true;
-        }
-    }
+export interface ContextPayload {
+    userId: string
 }
 
-export default Context;
-
-type Creds = {
-    userId: string;
-    iat: number;
-};
+export interface Context {
+    database: Database
+    req: Request,
+    payload: ContextPayload
+}

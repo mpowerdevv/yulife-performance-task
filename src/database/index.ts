@@ -1,5 +1,5 @@
 import { mongoose } from "@typegoose/typegoose";
-import { UserModel, MessageModel } from "./models";
+import { UserModel, MessageModel, ArchiveModel } from "./models";
 import { Config } from "../config/types";
 import { Unpacked } from "../utils/types";
 
@@ -10,6 +10,7 @@ const init = async (config: Config["database"]) => {
         connection,
         UserModel,
         MessageModel,
+        ArchiveModel
     };
 };
 

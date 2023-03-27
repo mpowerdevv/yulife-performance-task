@@ -1,8 +1,10 @@
-import { Resolver, Mutation, Ctx, Root, Arg, FieldResolver } from "type-graphql";
-import Message from "./message.type";
+import { Resolver, Mutation, Ctx, Root, Arg, FieldResolver, UseMiddleware, Query } from "type-graphql";
+import Message, { Archive } from "./message.type";
 import User from "../user/user.type";
-import Context from "../../context";
+import { Context } from "../../context";
 import { random } from "../../../utils/math";
+import { isAuthorized } from "../../__helpers__/isAuthorized";
+import { isDocument } from "@typegoose/typegoose";
 const randomSentence = require("random-sentence");
 
 @Resolver(Message)
@@ -11,7 +13,7 @@ export default class MessageResolver {
      * Looks up and returns the recipient
      */
     @FieldResolver()
-    async to(@Root() { to }: Message, @Ctx() { database }: Context): Promise<User | null> {
+    async to(@Root() { to }: Message | Archive, @Ctx() { database }: Context): Promise<User | null> {
         // TODO: add lookup from DB
         if (!to) {
             return null;
@@ -28,6 +30,7 @@ export default class MessageResolver {
             name: user.name,
             unreadMessageCount: undefined,
             inbox: undefined,
+            archive: undefined
         };
     }
 
@@ -35,7 +38,7 @@ export default class MessageResolver {
      * Looks up and returns the sender
      */
     @FieldResolver()
-    async from(@Root() { from }: Message, @Ctx() { database }: Context): Promise<User | null> {
+    async from(@Root() { from }: Message | Archive, @Ctx() { database }: Context): Promise<User | null> {
         if (!from) {
             return null;
         }
@@ -53,6 +56,7 @@ export default class MessageResolver {
             name: user.name,
             unreadMessageCount: undefined,
             inbox: undefined,
+            archive: undefined
         };
     }
 
@@ -60,10 +64,9 @@ export default class MessageResolver {
      * Sends a message to a random user
      */
     @Mutation(type => Message)
-    async sendRandomMessage(@Ctx() { database, userId }: Context, @Arg("message") message: string): Promise<Message> {
-        if (!userId) {
-            throw new Error(`Not authenticated`);
-        }
+    @UseMiddleware(isAuthorized)
+    async sendRandomMessage(@Ctx() { database, payload }: Context, @Arg("message") message: string): Promise<Message> {
+        const userId = payload.userId;
 
         const count = await database.UserModel.countDocuments({});
         const to = await database.UserModel.findOne({ _id: { $ne: userId } })
@@ -82,5 +85,63 @@ export default class MessageResolver {
             to: to?._id,
             from: userId as any,
         };
+    }
+
+    @Mutation(() => Archive)
+    @UseMiddleware(isAuthorized)
+    async markMessageAsRead(@Ctx() { database, payload }: Context, @Arg("messageId") messageId: string): Promise<Archive> {
+        const userId = payload.userId;
+
+        const record = await database.MessageModel.findOne({
+            to: userId,
+            _id: messageId
+        });
+
+        if (!isDocument(record)) {
+            throw new Error('No message found!')
+        }
+
+        if (!isDocument(record.from)) {
+            throw new Error('No From User defined!')
+        }
+
+        if (!isDocument(record.to)) {
+            throw new Error('No To User defined!')
+        }
+
+        const { from, to, contents } = record;
+
+        const archivedRecord = await database.ArchiveModel.create({
+            from: from?._id,
+            to: to?._id,
+            contents: contents,
+            archivedAt: Date.now()
+        })
+
+        await database.MessageModel.deleteOne({
+            _id: messageId
+        })
+
+
+        return {
+            id: archivedRecord.id,
+            from: archivedRecord.from as any,
+            to: archivedRecord.to as any,
+            contents: archivedRecord.contents,
+            archivedAt: archivedRecord.archivedAt as number
+        };
+    }
+
+    @Query(() => Message, { nullable: true })
+    @UseMiddleware(isAuthorized)
+    async getMessageById(@Ctx() { database, payload }: Context, @Arg("messageId") messageId: string) {
+        const userId = payload.userId;
+
+        const record = await database.MessageModel.findOne({
+            to: userId,
+            _id: messageId
+        });
+
+        return record;
     }
 }
