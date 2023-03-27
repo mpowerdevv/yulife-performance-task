@@ -11,4 +11,5 @@ const getConfig = (): Config => {
     }
 }
 
+
 export default getConfig();

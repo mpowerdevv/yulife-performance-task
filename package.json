@@ -4,7 +4,7 @@
   "main": "index.js",
   "license": "MIT",
   "scripts": {
-    "develop": "concurrently 'yarn tsc -w' 'yarn nodemon build/init.js'",
+    "develop": "concurrently 'yarn tsc -w' 'NODE_ENV=development yarn nodemon build/init.js'",
     "build": "tsc",
     "start": "pm2 start pm2.json --no-daemon",
     "artillery:run": "artillery run ./artillery/main.yml",
@@ -17,9 +17,7 @@
     "@types/bcrypt": "^3.0.0",
     "@types/express": "^4.17.11",
     "@types/express-jwt": "^6.0.1",
-    "@types/express-unless": "^2.0.1",
     "@types/jsonwebtoken": "^8.5.0",
-    "@types/mongodb": "^4.0.7",
     "@types/mongoose": "^5.10.3",
     "@types/node": "^14.14.34",
     "apollo-server-express": "^2.21.1",

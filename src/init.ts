@@ -7,6 +7,7 @@ import { buildSchema } from "type-graphql";
 import { ApolloServer } from "apollo-server-express";
 import { resolvers } from "./graphql/resolvers";
 
+const SERVER_PORT = process.env.PORT || 5001;
 
 const init = async () => {
     const app = express();
@@ -32,12 +33,13 @@ const init = async () => {
     // );
 
     // for debugging
-    app.get("/playground", expressPlayground({ endpoint: "/graphql" }));
+    if (process.env.NODE_ENV !== 'production')
+        app.get("/playground", expressPlayground({ endpoint: "/graphql" }));
 
     server.applyMiddleware({ app, path });
 
-    app.listen(3000);
-    console.log(`App listening on port 3000!`);
+    app.listen(SERVER_PORT);
+    console.log(`App listening on port ${SERVER_PORT}!`);
     console.log('MODE:', process.env.NODE_ENV);
 };
 

@@ -119,6 +119,7 @@ export default class UserResolver {
      */
     @Mutation(() => String)
     async login(@Arg("email") email: string, @Arg("password") password: string, @Ctx() { database }: Context) {
+        console.log('Hi3')
         const record = await database.UserModel.findOne({ email });
 
         if (!record) {
