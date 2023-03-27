@@ -1,0 +1,32 @@
+config:
+    target: "http://localhost:5000"
+    phases:
+        - duration: 30
+          name: "Warm-up"
+          arrivalRate: 1
+        - duration: 30
+          name: "High load phase - by arrival rate"
+          arrivalRate: 10
+    processor: "./index.js"
+scenarios:
+    - name: "YuLife Performance load test"
+      flow:
+          - post:
+                url: "/graphql"
+                json:
+                    email: "user+1@test.yulife.com"
+                    password: "abcd1234"
+                beforeRequest: "login"
+                afterResponse: "storeToken"
+          - log: "New virtual user logged in ..."
+          - loop:
+                - think: 1
+                - post:
+                      url: "/graphql"
+                      beforeRequest: "getUser"
+                      #   afterResponse: "log"
+            count: 5
+          - post:
+                url: "/graphql"
+                beforeRequest: "getMessages"
+                # afterResponse: "log"

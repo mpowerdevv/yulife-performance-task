@@ -1,0 +1,11 @@
+{
+    "apps": [
+        {
+            "exec_mode": "cluster",
+            "instances": 1,
+            "script": "./build/init.js",
+            "name": "yulifePerfTest",
+            "interpreter": "node"
+        }
+    ]
+}
